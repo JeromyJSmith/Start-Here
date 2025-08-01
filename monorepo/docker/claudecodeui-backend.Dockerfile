@@ -2,18 +2,23 @@
 FROM node:18-alpine as base
 
 # Install pnpm and system dependencies
-RUN corepack enable && corepack prepare pnpm@8.15.0 --activate && \
+RUN corepack enable && corepack prepare pnpm@latest --activate && \
     apk add --no-cache python3 py3-setuptools make g++ && \
     ln -sf python3 /usr/bin/python
+
+# Set pnpm environment
+ENV PNPM_HOME=/pnpm
+ENV PATH=/pnpm:$PATH
 
 # Set working directory
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json ./
+COPY pnpm-lock.yaml ./
 
 # Install dependencies
-RUN pnpm install
+RUN pnpm install --frozen-lockfile --prod
 
 # Copy source code
 COPY . .

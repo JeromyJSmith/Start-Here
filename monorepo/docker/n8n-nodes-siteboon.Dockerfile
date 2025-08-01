@@ -2,17 +2,23 @@
 FROM node:18-alpine as base
 
 # Install pnpm and system dependencies
-RUN corepack enable && corepack prepare pnpm@8.15.0 --activate && \
+RUN corepack enable  corepack prepare pnpm@latest --activate  \
     apk add --no-cache python3 make g++
+
+# Set pnpm environment
+ENV PNPM_HOME=/pnpm
+ENV PATH=/pnpm:$PATH
 
 # Set working directory
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml* tsconfig.json* ./
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+COPY tsconfig.json* ./
 
 # Install dependencies
-RUN pnpm install
+RUN pnpm install --frozen-lockfile --prod
 
 # Copy source code
 COPY . .
@@ -31,4 +37,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5678 || exit 1
 
 # Development command
-CMD ["n8n", "start"]
+CMD ["pnpm", "run", "start"]
