@@ -1,0 +1,46 @@
+{
+  "id": "your-plugin-id",
+  "name": "Your Plugin Name",
+  "version": "1.0.0",
+  "description": "A brief description of what your plugin does",
+  "author": "Your Name",
+  "githubUrl": "https://github.com/yourusername/your-plugin-repo",
+  "main": "index.js",
+  "capabilities": [
+    "chat.tools",
+    "keyboard.shortcuts",
+    "settings.custom",
+    "quickSettings.custom",
+    "messages.custom"
+  ],
+  "settingsSchema": {
+    "exampleSetting": {
+      "type": "string",
+      "title": "Example Setting",
+      "description": "An example setting for your plugin",
+      "default": "Default value"
+    },
+    "enableFeature": {
+      "type": "boolean",
+      "title": "Enable Feature",
+      "description": "Enable or disable the main feature",
+      "default": true
+    },
+    "numberOfItems": {
+      "type": "number",
+      "title": "Number of Items",
+      "description": "Configure the number of items to process",
+      "default": 10,
+      "minimum": 1,
+      "maximum": 100
+    }
+  },
+  "permissions": [
+    "chat:read",
+    "chat:write",
+    "settings:read",
+    "settings:write",
+    "keyboard:register"
+  ],
+  "minClaudeCodeVersion": "1.0.0"
+}

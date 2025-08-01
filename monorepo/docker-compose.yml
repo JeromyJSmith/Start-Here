@@ -1,0 +1,386 @@
+version: '3.8'
+
+networks:
+  claude-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  sqlite_data:
+  redis_data:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+  neo4j_plugins:
+  shared_data:
+  node_modules_cache:
+  uv_cache:
+
+services:
+  # Python services with uv
+  claude-code:
+    build:
+      context: .
+      dockerfile: ./docker/claude-code.Dockerfile
+    container_name: claude-code
+    ports:
+      - "8002:8002"
+    environment:
+      - PYTHONPATH=/app/superclaude-framework:/app/claude-code
+      - UV_CACHE_DIR=/app/.uv-cache
+      - PATH=/app/superclaude-framework/.venv/bin:$PATH
+    volumes:
+      - ./services/claude-code:/app/claude-code
+      - ./services/superclaude-framework:/app/superclaude-framework
+      - uv_cache:/app/.uv-cache
+      - shared_data:/shared
+    networks:
+      - claude-network
+    restart: unless-stopped
+
+  genai-stack:
+    build:
+      context: ./services/genai-stack
+      dockerfile: ../../docker/genai-stack.Dockerfile
+    container_name: genai-stack
+    ports:
+      - "8003:8003"  # API
+      - "7860:7860"  # Frontend
+    environment:
+      - PYTHONPATH=/app
+      - UV_CACHE_DIR=/app/.uv-cache
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - LLM=llama2
+      - EMBEDDING_MODEL=sentence-transformer
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=development
+    volumes:
+      - ./services/genai-stack:/app
+      - uv_cache:/app/.uv-cache
+      - shared_data:/shared
+    networks:
+      - claude-network
+    depends_on:
+      - ollama
+      - neo4j
+    restart: unless-stopped
+
+  # Node.js services with pnpm
+  agent-io:
+    build:
+      context: ./services/agent-io
+      dockerfile: ../../docker/agent-io.Dockerfile
+    container_name: agent-io
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PNPM_HOME=/pnpm
+      - PATH=/pnpm:$PATH
+    volumes:
+      - ./services/agent-io:/app
+      - node_modules_cache:/app/node_modules
+      - shared_data:/shared
+    networks:
+      - claude-network
+    restart: unless-stopped
+
+  cli-tool:
+    build:
+      context: ./services/cli-tool
+      dockerfile: ../../docker/cli-tool.Dockerfile
+    container_name: cli-tool
+    ports:
+      - "3002:3001"
+    environment:
+      - NODE_ENV=development
+      - PNPM_HOME=/pnpm
+      - PATH=/pnpm:$PATH
+    volumes:
+      - ./services/cli-tool:/app
+      - node_modules_cache:/app/node_modules
+      - shared_data:/shared
+    networks:
+      - claude-network
+    restart: unless-stopped
+
+  claudecodeui-frontend:
+    build:
+      context: ./services/claudecodeui-frontend
+      dockerfile: ../../docker/claudecodeui-frontend.Dockerfile
+    container_name: claudecodeui-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:3000
+      - PNPM_HOME=/pnpm
+      - PATH=/pnpm:$PATH
+    volumes:
+      - ./services/claudecodeui-frontend:/app
+      - node_modules_cache:/app/node_modules
+      - shared_data:/shared
+    networks:
+      - claude-network
+    depends_on:
+      - claudecodeui-backend
+    restart: unless-stopped
+
+  claudecodeui-backend:
+    build:
+      context: ./services/claudecodeui-backend
+      dockerfile: ../../docker/claudecodeui-backend.Dockerfile
+    container_name: claudecodeui-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=sqlite:///app/data/database.db
+      - JWT_SECRET=development-secret-change-in-production
+      - PNPM_HOME=/pnpm
+      - PATH=/pnpm:$PATH
+    volumes:
+      - ./services/claudecodeui-backend:/app
+      - sqlite_data:/app/data
+      - node_modules_cache:/app/node_modules
+      - shared_data:/shared
+    networks:
+      - claude-network
+    restart: unless-stopped
+
+  claudecodeui-plugin:
+    build:
+      context: ./services/claudecodeui-plugin
+      dockerfile: ../../docker/claudecodeui-plugin.Dockerfile
+    container_name: claudecodeui-plugin
+    environment:
+      - NODE_ENV=development
+      - PNPM_HOME=/pnpm
+      - PATH=/pnpm:$PATH
+    volumes:
+      - ./services/claudecodeui-plugin:/app
+      - node_modules_cache:/app/node_modules
+      - shared_data:/shared
+    networks:
+      - claude-network
+    restart: unless-stopped
+
+  n8n-nodes-siteboon:
+    build:
+      context: ./services/n8n-nodes-siteboon
+      dockerfile: ../../docker/n8n-nodes-siteboon.Dockerfile
+    container_name: n8n-nodes-siteboon
+    ports:
+      - "5678:5678"
+    environment:
+      - NODE_ENV=development
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin
+      - PNPM_HOME=/pnpm
+      - PATH=/pnpm:$PATH
+    volumes:
+      - ./services/n8n-nodes-siteboon:/app
+      - node_modules_cache:/app/node_modules
+      - shared_data:/shared
+    networks:
+      - claude-network
+    restart: unless-stopped
+
+  # Supporting services
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./volumes/ollama:/root/.ollama
+    networks:
+      - claude-network
+    restart: unless-stopped
+    # GPU support - comment out if no NVIDIA GPU available
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=claude_code
+      - POSTGRES_USER=claude
+      - POSTGRES_PASSWORD=development
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - claude-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - claude-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  neo4j:
+    image: neo4j:5-community
+    container_name: neo4j
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    environment:
+      - NEO4J_AUTH=neo4j/development
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_import_file_use__neo4j__config=true
+      - NEO4J_PLUGINS=["apoc"]
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+    networks:
+      - claude-network
+    restart: unless-stopped
+
+  # Development tools
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/ssl:/etc/nginx/ssl
+      - ./services/user-manual:/usr/share/nginx/html/user-manual:ro
+    networks:
+      - claude-network
+    depends_on:
+      - claudecodeui-frontend
+      - claudecodeui-backend
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: ./docker/dashboard.Dockerfile
+    container_name: dashboard
+    ports:
+      - "8080:80"
+    networks:
+      - claude-network
+    restart: unless-stopped
+
+  # Memory Service with Cognee and Memento MCP
+  memory-service:
+    build:
+      context: .
+      dockerfile: ./services/memory-service/Dockerfile
+    container_name: memory-service
+    ports:
+      - "8500:8500"  # Memory Service API
+      - "8501:8501"  # Memento MCP server
+    environment:
+      - PYTHONPATH=/app/cognee:/app/memory-service:$PYTHONPATH
+      - UV_CACHE_DIR=/app/.uv-cache
+      # Neo4j configuration for both Cognee and Memento
+      - GRAPH_DATABASE_PROVIDER=neo4j
+      - GRAPH_DATABASE_URL=bolt://neo4j:7687
+      - GRAPH_DATABASE_USERNAME=neo4j
+      - GRAPH_DATABASE_PASSWORD=development
+      - VECTOR_ENGINE_PROVIDER=neo4j
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=development
+      - NEO4J_DATABASE=neo4j
+      - MEMORY_STORAGE_TYPE=neo4j
+      - NEO4J_VECTOR_INDEX=entity_embeddings
+      - NEO4J_VECTOR_DIMENSIONS=1536
+      - NEO4J_SIMILARITY_FUNCTION=cosine
+      # OpenAI configuration (if available)
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+      - LLM_API_KEY=${OPENAI_API_KEY:-}
+      # Debug settings
+      - DEBUG=true
+    volumes:
+      - ./services/memory-service:/app/memory-service
+      - ./services/cognee:/app/cognee
+      - ./services/memento-mcp:/app/memento-mcp
+      - uv_cache:/app/.uv-cache
+      - shared_data:/shared
+    networks:
+      - claude-network
+    depends_on:
+      - neo4j
+
+  # LlamaCloud Service
+  llamacloud-service:
+    build:
+      context: .
+      dockerfile: ./services/llamacloud-service/Dockerfile
+    container_name: llamacloud-service
+    ports:
+      - "8504:8504"  # LlamaCloud Service health check
+    environment:
+      - LLAMA_INDEX_API_KEY=${LLAMA_INDEX_API_KEY}
+      - LLAMA_CLOUD_API_KEY=${LLAMA_CLOUD_API_KEY}
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=development
+    volumes:
+      - ./services/llamacloud-mcp:/app/llamacloud-mcp
+      - uv_cache:/app/.uv-cache
+    networks:
+      - claude-network
+    depends_on:
+      - neo4j
+    restart: unless-stopped
+
+  # Unified Query Service
+  unified-query-service:
+    build:
+      context: .
+      dockerfile: ./services/unified-query-service/Dockerfile
+    container_name: unified-query-service
+    ports:
+      - "8505:8505"  # Main API
+      - "8000:8000"  # Control plane
+      - "8001-8010:8001-8010"  # Workflow services
+    environment:
+      - LLAMA_INDEX_API_KEY=${LLAMA_INDEX_API_KEY}
+      - LLAMA_CLOUD_API_KEY=${LLAMA_CLOUD_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=development
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./services/unified-query-service:/app/unified-query-service
+      - ./services/llama_deploy:/app/llama_deploy
+      - shared_data:/shared
+      - uv_cache:/app/.uv-cache
+    networks:
+      - claude-network
+    depends_on:
+      - redis
+      - neo4j
+      - memory-service
+      - llamacloud-service
+    restart: unless-stopped

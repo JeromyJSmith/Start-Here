@@ -1,0 +1,41 @@
+{
+  "name": "claude-code-monorepo",
+  "version": "1.0.0",
+  "description": "Monorepo containing all Claude Code projects",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@8.15.0",
+  "workspaces": [
+    "services/cli-tool",
+    "services/claudecodeui-frontend",
+    "services/claudecodeui-backend",
+    "services/claudecodeui-plugin",
+    "services/n8n-nodes-siteboon"
+  ],
+  "scripts": {
+    "dev": "docker-compose up --build",
+    "dev:detached": "docker-compose up -d --build",
+    "build": "docker-compose build",
+    "stop": "docker-compose down",
+    "clean": "docker-compose down -v --remove-orphans && docker system prune -f",
+    "logs": "docker-compose logs -f",
+    "shell:superclaude": "docker-compose exec superclaude-framework bash",
+    "shell:cli": "docker-compose exec cli-tool bash",
+    "shell:frontend": "docker-compose exec claudecodeui-frontend bash",
+    "shell:backend": "docker-compose exec claudecodeui-backend bash",
+    "install:all": "pnpm install && make install-python",
+    "test:all": "make test",
+    "lint:all": "make lint",
+    "format:all": "make format"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.0",
+    "prettier": "^3.0.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "claude-code-monorepo-e2e-tests",
+  "version": "1.0.0",
+  "description": "End-to-end tests for Claude Code Monorepo system",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report",
+    "test:codegen": "playwright codegen",
+    "install:browsers": "playwright install",
+    "install:deps": "playwright install-deps"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.1",
+    "playwright": "^1.44.1"
+  },
+  "keywords": [
+    "e2e",
+    "testing",
+    "playwright",
+    "claude-code",
+    "monorepo"
+  ],
+  "author": "Claude Code Contributors",
+  "license": "MIT"
+}

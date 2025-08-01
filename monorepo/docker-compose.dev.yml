@@ -1,0 +1,62 @@
+# Development-specific overrides
+version: '3.8'
+
+services:
+  superclaude-framework:
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      - WATCHDOG_ENABLED=true
+    volumes:
+      - ./services/superclaude-framework:/app:cached
+    command: ["python", "-m", "watchdog", "--auto-restart", "--", "python", "-m", "SuperClaude"]
+
+  claude-code:
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./services/claude-code:/app:cached
+
+  genai-stack:
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./services/genai-stack:/app:cached
+
+  cli-tool:
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ./services/cli-tool:/app:cached
+      - /app/node_modules
+    command: ["pnpm", "run", "analytics:start"]
+
+  claudecodeui-frontend:
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - VITE_HMR_HOST=localhost
+    volumes:
+      - ./services/claudecodeui-frontend:/app:cached
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+
+  claudecodeui-backend:
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ./services/claudecodeui-backend:/app:cached
+      - /app/node_modules
+    command: ["pnpm", "run", "dev"]
+
+  n8n-nodes-siteboon:
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./services/n8n-nodes-siteboon:/app:cached
+      - /app/node_modules

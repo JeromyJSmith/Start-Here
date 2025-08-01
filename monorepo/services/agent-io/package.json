@@ -1,0 +1,100 @@
+{
+  "name": "@agent-io/monorepo",
+  "version": "0.1.0",
+  "description": "Agent-IO monorepo for universal AI agent toolkit packages",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm-run-all --sequential build:packages",
+    "build:packages": "npm run build --workspaces --if-present",
+    "build:all": "npm-run-all --sequential clean build",
+    "build:core": "npm run build --workspace packages/core",
+    "build:jsonl": "npm run build --workspace packages/jsonl",
+    "build:stream": "npm run build --workspace packages/stream",
+    "build:invoke": "npm run build --workspace packages/invoke",
+    "dev": "npm-run-all --parallel dev:*",
+    "dev:packages": "npm run dev --workspaces --if-present",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:workspace": "vitest run --workspace",
+    "test:integration": "vitest run tests/integration",
+    "test:performance": "npm run test:performance --workspaces --if-present",
+    "test:packages": "npm run test --workspaces --if-present",
+    "test:all": "npm-run-all test:packages test:integration",
+    "typecheck": "tsc --noEmit && npm run typecheck --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "lint:packages": "npm run lint --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "validate": "npm-run-all --parallel lint:packages typecheck test",
+    "bootstrap": "npm install && npm run build:all",
+    "workspace:add": "npm install --workspace",
+    "workspace:run": "npm run --workspace",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release:patch": "./scripts/prepare-release.sh --type patch",
+    "release:minor": "./scripts/prepare-release.sh --type minor",
+    "release:major": "./scripts/prepare-release.sh --type major"
+  },
+  "keywords": [
+    "monorepo",
+    "agent-io",
+    "ai",
+    "agent",
+    "agents",
+    "cli",
+    "jsonl",
+    "stream",
+    "formatter",
+    "claude",
+    "gemini",
+    "amp",
+    "tools",
+    "typescript"
+  ],
+  "author": {
+    "name": "Carl Rannaberg",
+    "email": "carl@rannaberg.com",
+    "url": "https://github.com/carlrannaberg"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/carlrannaberg/agent-io#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/carlrannaberg/agent-io.git"
+  },
+  "bugs": {
+    "url": "https://github.com/carlrannaberg/agent-io/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "devDependencies": {
+    "@changesets/cli": "2.29.5",
+    "@types/node": "^20.0.0",
+    "@types/tar": "6.1.13",
+    "@typescript-eslint/eslint-plugin": "6.21.0",
+    "@typescript-eslint/parser": "6.21.0",
+    "@vitest/coverage-v8": "1.6.1",
+    "@vitest/ui": "1.6.1",
+    "eslint": "8.57.1",
+    "npm-run-all2": "6.2.6",
+    "prettier": "3.6.2",
+    "tar": "7.4.3",
+    "tsup": "8.5.0",
+    "typescript": "^5.0.0",
+    "vitest": "1.6.1"
+  },
+  "dependencies": {
+    "@agent-io/stream": "0.1.6"
+  },
+  "packageManager": "pnpm@8.15.0+sha512.ea45517d5285d123eac02c3793505fa1fd6da90a2fc60d1e8d9e0c1e9292886ecfaff513f062b9d1cc8021bb8615033b1ac5bea3b2ee3fc165a6d7034bbe6b03"
+}

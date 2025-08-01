@@ -1,0 +1,373 @@
+name: Claude Code Monorepo Test Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Job 1: Detect changes and set up matrix
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      python-services: ${{ steps.changes.outputs.python-services }}
+      node-services: ${{ steps.changes.outputs.node-services }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+      e2e-needed: ${{ steps.changes.outputs.e2e-needed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            python-services:
+              - 'services/superclaude-framework/**'
+              - 'services/memory-service/**'
+              - 'services/unified-query-service/**'
+              - 'services/genai-stack/**'
+              - 'services/cognee/**'
+              - 'services/memos/**'
+            node-services:
+              - 'services/cli-tool/**'
+              - 'services/claudecodeui-backend/**'
+              - 'services/agent-io/**'
+              - 'services/n8n-nodes-siteboon/**'
+              - 'services/memento-mcp/**'
+              - 'services/llamacloud-mcp/**'
+            frontend:
+              - 'services/claudecodeui-frontend/**'
+            e2e-needed:
+              - 'services/claudecodeui-frontend/**'
+              - 'services/claudecodeui-backend/**'
+              - 'services/e2e-tests/**'
+
+  # Job 2: Python services testing
+  test-python-services:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.python-services == 'true'
+    strategy:
+      matrix:
+        service: 
+          - superclaude-framework
+          - memory-service
+          - unified-query-service
+          - cognee
+          - memos
+      fail-fast: false
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.service }}-${{ hashFiles('services/${{ matrix.service }}/requirements.txt', 'services/${{ matrix.service }}/pyproject.toml') }}
+
+      - name: Install dependencies
+        working-directory: services/${{ matrix.service }}
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f pyproject.toml ]; then pip install -e .; fi
+          pip install pytest pytest-cov pytest-asyncio pytest-mock
+
+      - name: Run unit tests
+        working-directory: services/${{ matrix.service }}
+        run: |
+          python -m pytest tests/ -v --cov --cov-report=xml --cov-report=html
+        env:
+          PYTHONPATH: ${{ github.workspace }}/services/${{ matrix.service }}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: services/${{ matrix.service }}/coverage.xml
+          flags: ${{ matrix.service }}
+          name: ${{ matrix.service }}-coverage
+
+  # Job 3: Node.js services testing
+  test-node-services:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.node-services == 'true'
+    strategy:
+      matrix:
+        service:
+          - cli-tool
+          - claudecodeui-backend
+          - agent-io
+          - memento-mcp
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: services/${{ matrix.service }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/${{ matrix.service }}
+        run: npm ci
+
+      - name: Run linting
+        working-directory: services/${{ matrix.service }}
+        run: |
+          if npm run lint --if-present; then
+            echo "Linting passed"
+          else
+            echo "Linting failed or not configured"
+          fi
+
+      - name: Run unit tests
+        working-directory: services/${{ matrix.service }}
+        run: npm test
+        env:
+          NODE_ENV: test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: services/${{ matrix.service }}/coverage/lcov.info
+          flags: ${{ matrix.service }}
+          name: ${{ matrix.service }}-coverage
+
+  # Job 4: Frontend testing
+  test-frontend:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: services/claudecodeui-frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/claudecodeui-frontend
+        run: npm ci
+
+      - name: Run linting
+        working-directory: services/claudecodeui-frontend
+        run: |
+          if npm run lint --if-present; then
+            echo "Linting passed"
+          else
+            echo "Linting not configured"
+          fi
+
+      - name: Run unit tests
+        working-directory: services/claudecodeui-frontend
+        run: npm run test:run
+
+      - name: Build frontend
+        working-directory: services/claudecodeui-frontend
+        run: npm run build
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: services/claudecodeui-frontend/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+
+  # Job 5: E2E testing
+  test-e2e:
+    runs-on: ubuntu-latest
+    needs: [detect-changes, test-node-services, test-frontend]
+    if: needs.detect-changes.outputs.e2e-needed == 'true' && (success() || failure())
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install frontend dependencies
+        working-directory: services/claudecodeui-frontend
+        run: npm ci
+
+      - name: Install backend dependencies
+        working-directory: services/claudecodeui-backend
+        run: npm ci
+
+      - name: Install E2E test dependencies
+        working-directory: services/e2e-tests
+        run: |
+          npm ci
+          npx playwright install --with-deps
+
+      - name: Build frontend
+        working-directory: services/claudecodeui-frontend
+        run: npm run build
+
+      - name: Run E2E tests
+        working-directory: services/e2e-tests
+        run: npm test
+        env:
+          CI: true
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-test-results
+          path: services/e2e-tests/test-results/
+          retention-days: 7
+
+      - name: Upload E2E test report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-test-report
+          path: services/e2e-tests/playwright-report/
+          retention-days: 7
+
+  # Job 6: Security scanning
+  security-scan:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Job 7: Code quality analysis
+  code-quality:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # Job 8: Dependency audit
+  dependency-audit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - claudecodeui-frontend
+          - claudecodeui-backend
+          - cli-tool
+          - e2e-tests
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Run npm audit
+        working-directory: services/${{ matrix.service }}
+        run: |
+          npm audit --audit-level=high
+        continue-on-error: true
+
+  # Job 9: Performance testing
+  performance-test:
+    runs-on: ubuntu-latest
+    needs: [test-frontend, test-node-services]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          cd services/claudecodeui-frontend && npm ci
+          cd ../claudecodeui-backend && npm ci
+
+      - name: Build and start services
+        run: |
+          cd services/claudecodeui-frontend && npm run build &
+          cd services/claudecodeui-backend && npm start &
+          sleep 30
+
+      - name: Run Lighthouse CI
+        run: |
+          npm install -g @lhci/cli
+          lhci autorun --collect.url=http://localhost:3000
+        continue-on-error: true
+
+  # Job 10: Notification and reporting
+  notify-results:
+    runs-on: ubuntu-latest
+    needs: [test-python-services, test-node-services, test-frontend, test-e2e]
+    if: always()
+
+    steps:
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Tests failed - check the logs above"
+          # Add notification logic here (Slack, Discord, etc.)
+
+      - name: Generate test summary
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Python Services: ${{ needs.test-python-services.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Node.js Services: ${{ needs.test-node-services.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend: ${{ needs.test-frontend.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E Tests: ${{ needs.test-e2e.result }}" >> $GITHUB_STEP_SUMMARY

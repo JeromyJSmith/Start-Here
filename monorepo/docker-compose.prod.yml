@@ -1,0 +1,118 @@
+# Production overrides
+version: '3.8'
+
+services:
+  superclaude-framework:
+    restart: always
+    environment:
+      - PYTHONOPTIMIZE=1
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  claude-code:
+    restart: always
+    environment:
+      - PYTHONOPTIMIZE=1
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  genai-stack:
+    restart: always
+    environment:
+      - PYTHONOPTIMIZE=1
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  cli-tool:
+    restart: always
+    environment:
+      - NODE_ENV=production
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  claudecodeui-frontend:
+    restart: always
+    environment:
+      - NODE_ENV=production
+    command: ["pnpm", "run", "preview"]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  claudecodeui-backend:
+    restart: always
+    environment:
+      - NODE_ENV=production
+    command: ["pnpm", "run", "start"]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  claudecodeui-plugin:
+    restart: always
+    environment:
+      - NODE_ENV=production
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  n8n-nodes-siteboon:
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - N8N_BASIC_AUTH_ACTIVE=true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres:
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ollama:
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nginx:
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Monorepo Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem 0;
+            border-bottom: 1px solid #333;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: #888;
+            font-size: 1.2rem;
+        }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        
+        .service-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-4px);
+            border-color: #667eea;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+        }
+        
+        .service-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        
+        .service-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .status.running {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34d399;
+            border: 1px solid #34d399;
+        }
+        
+        .status.building {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            border: 1px solid #fbbf24;
+        }
+        
+        .status.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+        
+        .service-tech {
+            color: #888;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .service-description {
+            color: #ccc;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+        
+        .service-links {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .service-link {
+            padding: 0.5rem 1rem;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .service-link:hover {
+            background: #3a3a3a;
+            border-color: #667eea;
+        }
+        
+        .quick-actions {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .quick-actions h2 {
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+        
+        .commands {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        
+        .command {
+            background: #2a2a2a;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #34d399;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .command:hover {
+            background: #3a3a3a;
+        }
+        
+        .command-label {
+            color: #888;
+            font-size: 0.8rem;
+            margin-bottom: 0.25rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .infrastructure {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 2rem;
+        }
+        
+        .infrastructure h2 {
+            margin-bottom: 1rem;
+        }
+        
+        .infra-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .infra-item {
+            background: #2a2a2a;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .infra-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .infra-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .infra-port {
+            color: #888;
+            font-size: 0.875rem;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .loading {
+            animation: pulse 2s infinite;
+        }
+        
+        .documentation-banner {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .documentation-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10" x="0" y="0" fill="rgba(102, 126, 234, 0.05)"/></svg>') repeat;
+            pointer-events: none;
+        }
+        
+        .documentation-banner h2 {
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+            color: #fff;
+        }
+        
+        .documentation-banner p {
+            color: #aaa;
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .doc-links {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .doc-link {
+            padding: 0.75rem 1.5rem;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .doc-link:hover {
+            background: #3a3a3a;
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .doc-link.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: transparent;
+            font-weight: 600;
+        }
+        
+        .doc-link.primary:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5);
+        }
+        
+        .doc-link .icon {
+            font-size: 1.2rem;
+        }
+        
+        .doc-link .text {
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Claude Monorepo</h1>
+            <p class="subtitle">Unified Docker Environment for Claude Code Ecosystem</p>
+        </header>
+
+        <div class="documentation-banner">
+            <h2>📚 User Manual</h2>
+            <p>New to the system? Check out our comprehensive documentation!</p>
+            <div class="doc-links">
+                <a href="/user-manual/" class="doc-link primary">
+                    <span class="icon">📖</span>
+                    <span class="text">Read the Manual</span>
+                </a>
+                <a href="/user-manual/quick-start.html" class="doc-link">
+                    <span class="icon">🚀</span>
+                    <span class="text">Quick Start Guide</span>
+                </a>
+                <a href="/user-manual/api/" class="doc-link">
+                    <span class="icon">🔌</span>
+                    <span class="text">API Reference</span>
+                </a>
+                <a href="/user-manual/troubleshooting.html" class="doc-link">
+                    <span class="icon">🔧</span>
+                    <span class="text">Troubleshooting</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <h2>🚀 Quick Commands</h2>
+            <div class="commands">
+                <div class="command" onclick="copyToClipboard('make dev')">
+                    <div class="command-label">Start all services</div>
+                    make dev
+                </div>
+                <div class="command" onclick="copyToClipboard('make logs')">
+                    <div class="command-label">View logs</div>
+                    make logs
+                </div>
+                <div class="command" onclick="copyToClipboard('make health')">
+                    <div class="command-label">Check health</div>
+                    make health
+                </div>
+                <div class="command" onclick="copyToClipboard('make stop')">
+                    <div class="command-label">Stop services</div>
+                    make stop
+                </div>
+            </div>
+        </div>
+
+        <h2 style="margin-bottom: 1.5rem;">📦 Services</h2>
+        <div class="services-grid">
+            <!-- Python Services -->
+            <div class="service-card">
+                <div class="service-header">
+                    <h3 class="service-name">SuperClaude Framework</h3>
+                    <span class="status building" id="status-superclaude">CLI Tool</span>
+                </div>
+                <p class="service-tech">Python • UV</p>
+                <p class="service-description">Core AI framework with command system, personas, and orchestration</p>
+                <div class="service-links">
+                    <a href="http://localhost:8001" class="service-link">
+                        🌐 API
+                    </a>
+                    <a href="#" class="service-link" onclick="showLogs('superclaude-framework')">
+                        📋 Logs
+                    </a>
+                </div>
+            </div>
+
+            <div class="service-card">
+                <div class="service-header">
+                    <h3 class="service-name">Claude Code</h3>
+                    <span class="status running" id="status-claude-code">Running</span>
+                </div>
+                <p class="service-tech">Python • HTTP Server</p>
+                <p class="service-description">CLI application with DevContainer support</p>
+                <div class="service-links">
+                    <a href="http://localhost:8002" class="service-link">
+                        🌐 Files
+                    </a>
+                    <a href="#" class="service-link" onclick="showLogs('claude-code')">
+                        📋 Logs
+                    </a>
+                </div>
+            </div>
+
+            <div class="service-card">
+                <div class="service-header">
+                    <h3 class="service-name">GenAI Stack</h3>
+                    <span class="status error" id="status-genai">Error</span>
+                </div>
+                <p class="service-tech">Python • FastAPI • Streamlit</p>
+                <p class="service-description">Multi-service AI stack with LangChain integration</p>
+                <div class="service-links">
+                    <a href="http://localhost:8003" class="service-link">
+                        🌐 API
+                    </a>
+                    <a href="http://localhost:7860" class="service-link">
+                        🎨 UI
+                    </a>
+                    <a href="#" class="service-link" onclick="showLogs('genai-stack')">
+                        📋 Logs
+                    </a>
+                </div>
+            </div>
+
+            <!-- Node.js Services -->
+            <div class="service-card">
+                <div class="service-header">
+                    <h3 class="service-name">CLI Tool</h3>
+                    <span class="status building" id="status-cli">Not Started</span>
+                </div>
+                <p class="service-tech">Node.js • Jest • Analytics</p>
+                <p class="service-description">Command-line interface with analytics dashboard</p>
+                <div class="service-links">
+                    <a href="http://localhost:3001" class="service-link">
+                        📊 Analytics
+                    </a>
+                    <a href="#" class="service-link" onclick="showLogs('cli-tool')">
+                        📋 Logs
+                    </a>
+                </div>
+            </div>
+
+            <div class="service-card">
+                <div class="service-header">
+                    <h3 class="service-name">ClaudeCodeUI Frontend</h3>
+                    <span class="status building" id="status-ui-frontend">Not Started</span>
+                </div>
+                <p class="service-tech">React • Vite • Tailwind</p>
+                <p class="service-description">Modern web interface with real-time updates</p>
+                <div class="service-links">
+                    <a href="http://localhost:5173" class="service-link">
+                        🎨 UI
+                    </a>
+                    <a href="#" class="service-link" onclick="showLogs('claudecodeui-frontend')">
+                        📋 Logs
+                    </a>
+                </div>
+            </div>
+
+            <div class="service-card">
+                <div class="service-header">
+                    <h3 class="service-name">ClaudeCodeUI Backend</h3>
+                    <span class="status building" id="status-ui-backend">Not Started</span>
+                </div>
+                <p class="service-tech">Node.js • Express • SQLite</p>
+                <p class="service-description">REST API server with authentication</p>
+                <div class="service-links">
+                    <a href="http://localhost:3000" class="service-link">
+                        🔌 API
+                    </a>
+                    <a href="#" class="service-link" onclick="showLogs('claudecodeui-backend')">
+                        📋 Logs
+                    </a>
+                </div>
+            </div>
+
+            <div class="service-card">
+                <div class="service-header">
+                    <h3 class="service-name">n8n Nodes</h3>
+                    <span class="status building" id="status-n8n">Not Started</span>
+                </div>
+                <p class="service-tech">TypeScript • n8n</p>
+                <p class="service-description">Automation nodes for n8n workflows</p>
+                <div class="service-links">
+                    <a href="http://localhost:5678" class="service-link">
+                        🤖 n8n
+                    </a>
+                    <a href="#" class="service-link" onclick="showLogs('n8n-nodes-siteboon')">
+                        📋 Logs
+                    </a>
+                </div>
+            </div>
+
+            <div class="service-card">
+                <div class="service-header">
+                    <h3 class="service-name">Agent-IO</h3>
+                    <span class="status running" id="status-agent-io">Running</span>
+                </div>
+                <p class="service-tech">Node.js • TypeScript • JSONL</p>
+                <p class="service-description">Universal JSONL formatter for AI agent CLIs with beautiful terminal and HTML output</p>
+                <div class="service-links">
+                    <a href="#" class="service-link" onclick="copyToClipboard('docker exec agent-io node packages/stream/dist/cli.cjs --help')">
+                        💻 CLI
+                    </a>
+                    <a href="#" class="service-link" onclick="showLogs('agent-io')">
+                        📋 Logs
+                    </a>
+                </div>
+            </div>
+
+            <div class="service-card">
+                <div class="service-header">
+                    <h3 class="service-name">Memory Service</h3>
+                    <span class="status building" id="status-memory">Not Started</span>
+                </div>
+                <p class="service-tech">Python • Cognee • Memento MCP</p>
+                <p class="service-description">AI memory system combining Cognee's graph memory with Memento MCP's knowledge graph</p>
+                <div class="service-links">
+                    <a href="http://localhost:8500" class="service-link">
+                        🧠 API
+                    </a>
+                    <a href="http://localhost:7474" class="service-link">
+                        🔗 Neo4j Browser
+                    </a>
+                    <a href="#" class="service-link" onclick="showLogs('memory-service')">
+                        📋 Logs
+                    </a>
+                </div>
+            </div>
+
+            <div class="service-card">
+                <div class="service-header">
+                    <h3 class="service-name">LlamaCloud Service</h3>
+                    <span class="status building" id="status-llamacloud">Not Started</span>
+                </div>
+                <p class="service-tech">Python • LlamaIndex • MCP</p>
+                <p class="service-description">LlamaIndex Cloud integration for document indexing and retrieval</p>
+                <div class="service-links">
+                    <a href="http://localhost:8504/health" class="service-link">
+                        🦙 Health
+                    </a>
+                    <a href="#" class="service-link" onclick="copyToClipboard('docker exec -it claude-code claude-code mcp query_main-docs \"<your query>\"')">
+                        🔍 Query
+                    </a>
+                    <a href="#" class="service-link" onclick="showLogs('llamacloud-service')">
+                        📋 Logs
+                    </a>
+                </div>
+            </div>
+
+            <div class="service-card">
+                <div class="service-header">
+                    <h3 class="service-name">Unified Query Service</h3>
+                    <span class="status building" id="status-unified-query">Not Started</span>
+                </div>
+                <p class="service-tech">Python • FastAPI • LlamaIndex</p>
+                <p class="service-description">Orchestrates queries across all memory systems with document processing and workflows</p>
+                <div class="service-links">
+                    <a href="http://localhost:8505/docs" class="service-link">
+                        📚 API Docs
+                    </a>
+                    <a href="#" class="service-link" onclick="copyToClipboard('python /app/unified-query-service/cli.py query \"your query here\"')">
+                        🔍 CLI
+                    </a>
+                    <a href="#" class="service-link" onclick="showLogs('unified-query-service')">
+                        📋 Logs
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="infrastructure">
+            <h2>🏗️ Infrastructure</h2>
+            <div class="infra-grid">
+                <div class="infra-item">
+                    <div class="infra-icon">🐘</div>
+                    <div class="infra-name">PostgreSQL</div>
+                    <div class="infra-port">Port: 5432</div>
+                </div>
+                <div class="infra-item">
+                    <div class="infra-icon">📦</div>
+                    <div class="infra-name">Redis</div>
+                    <div class="infra-port">Port: 6379</div>
+                </div>
+                <div class="infra-item">
+                    <div class="infra-icon">🤖</div>
+                    <div class="infra-name">Ollama</div>
+                    <div class="infra-port">Port: 11434</div>
+                </div>
+                <div class="infra-item">
+                    <div class="infra-icon">🌐</div>
+                    <div class="infra-name">Nginx</div>
+                    <div class="infra-port">Port: 80</div>
+                </div>
+                <div class="infra-item">
+                    <div class="infra-icon">🔗</div>
+                    <div class="infra-name">Neo4j</div>
+                    <div class="infra-port">Ports: 7474, 7687</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Show feedback
+                event.target.style.background = '#34d399';
+                event.target.style.color = '#000';
+                setTimeout(() => {
+                    event.target.style.background = '';
+                    event.target.style.color = '';
+                }, 500);
+            });
+        }
+
+        function showLogs(service) {
+            const command = `docker compose logs -f ${service}`;
+            copyToClipboard(command);
+            alert(`Command copied: ${command}\n\nPaste in terminal to view logs.`);
+        }
+
+        // Check service status
+        async function checkServiceStatus() {
+            const services = [
+                { name: 'claude-code', url: 'http://localhost:8002', elementId: 'status-claude-code' },
+                { name: 'genai-stack', url: 'http://localhost:8003', elementId: 'status-genai' },
+                { name: 'ollama', url: 'http://localhost:11434', elementId: 'status-ollama' },
+                { name: 'llamacloud-service', url: 'http://localhost:8504/health', elementId: 'status-llamacloud' },
+                { name: 'unified-query-service', url: 'http://localhost:8505/health', elementId: 'status-unified-query' }
+            ];
+
+            for (const service of services) {
+                try {
+                    const response = await fetch(service.url, { 
+                        method: 'HEAD',
+                        mode: 'no-cors'
+                    });
+                    // In no-cors mode, we can't read the status, but if it doesn't throw, it's reachable
+                    const element = document.getElementById(service.elementId);
+                    if (element) {
+                        element.textContent = 'Running';
+                        element.className = 'status running';
+                    }
+                } catch (error) {
+                    // Service is not reachable
+                    const element = document.getElementById(service.elementId);
+                    if (element && element.textContent !== 'Not Started') {
+                        element.textContent = 'Error';
+                        element.className = 'status error';
+                    }
+                }
+            }
+        }
+
+        // Check status on load and every 5 seconds
+        checkServiceStatus();
+        setInterval(checkServiceStatus, 5000);
+    </script>
+</body>
+</html>

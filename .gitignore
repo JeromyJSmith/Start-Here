@@ -1,0 +1,114 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.coverage
+.tox/
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+.npm
+.yarn-integrity
+.cache
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker volumes
+volumes/
+
+# Lock files (keep package-lock.json)
+pnpm-lock.yaml
+yarn.lock
+poetry.lock
+uv.lock
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
+dist/
+build/
+out/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Coverage
+coverage/
+.nyc_output
+
+# Keys (IMPORTANT: Never commit private keys)
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# Embedded git repositories (submodules)
+monorepo/services/claude-code/mcp-servers/just-prompt/
+monorepo/services/claude-code/mcp-servers/quick-data-mcp/
+monorepo/services/cognee/
+monorepo/services/llama_deploy/
+monorepo/services/llamacloud-mcp/
+monorepo/services/memento-mcp/
+monorepo/services/memory-service/cognee/
+monorepo/services/memory-service/memento-mcp/
+monorepo/services/memos/

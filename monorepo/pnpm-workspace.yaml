@@ -1,0 +1,7 @@
+packages:
+  - 'services/cli-tool'
+  - 'services/claudecodeui-frontend'
+  - 'services/claudecodeui-backend'
+  - 'services/claudecodeui-plugin'
+  - 'services/n8n-nodes-siteboon'
+  - 'shared/*'

@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "paths": {
+      "@agent-io/core": ["./packages/core/src"],
+      "@agent-io/jsonl": ["./packages/jsonl/src"],
+      "@agent-io/stream": ["./packages/stream/src"],
+      "@agent-io/invoke": ["./packages/invoke/src"]
+    }
+  },
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/jsonl" },
+    { "path": "./packages/stream" },
+    { "path": "./packages/invoke" }
+  ],
+  "files": []
+}

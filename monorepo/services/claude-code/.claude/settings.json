@@ -1,0 +1,125 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [{
+      "hooks": [
+        {
+          "type": "command",
+          "command": "uv run .claude/hooks/user_prompt_submit.py --log-only"
+        }
+      ]
+    }],
+    "PreToolUse": [{
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "uv run .claude/hooks/pre_tool_use.py"
+        }
+      ]
+    }],
+    "PostToolUse": [{
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "uv run .claude/hooks/post_tool_use.py"
+        }
+      ]
+    }],
+    "Notification": [{
+      "hooks": [
+        {
+          "type": "command",
+          "command": "uv run .claude/hooks/notification.py"
+        }
+      ]
+    }],
+    "Stop": [{
+      "hooks": [
+        {
+          "type": "command",
+          "command": "uv run .claude/hooks/stop.py"
+        }
+      ]
+    }],
+    "SubagentStop": [{
+      "hooks": [
+        {
+          "type": "command",
+          "command": "uv run .claude/hooks/subagent_stop.py"
+        }
+      ]
+    }],
+    "PreCompact": [{
+      "hooks": [
+        {
+          "type": "command",
+          "command": "uv run .claude/hooks/pre_compact.py"
+        }
+      ]
+    }],
+    "SessionStart": [{
+      "hooks": [
+        {
+          "type": "command",
+          "command": "uv run .claude/hooks/session_start.py"
+        }
+      ]
+    }]
+  },
+  "mcpServers": {
+    "just-prompt": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/app/mcp-servers/just-prompt",
+        "run",
+        "just-prompt",
+        "--default-models",
+        "openai:gpt-4o,anthropic:claude-3-5-haiku,gemini:gemini-2.0-flash-latest"
+      ],
+      "env": {}
+    },
+    "quick-data": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "--directory", 
+        "/app/mcp-servers/quick-data-mcp/quick-data-mcp",
+        "run",
+        "quick-data"
+      ],
+      "env": {}
+    },
+    "memento": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/app/mcp-servers/memento-mcp/dist/index.js"],
+      "env": {
+        "MEMORY_STORAGE_TYPE": "neo4j",
+        "NEO4J_URI": "bolt://neo4j:7687",
+        "NEO4J_USERNAME": "neo4j",
+        "NEO4J_PASSWORD": "development",
+        "NEO4J_DATABASE": "neo4j",
+        "NEO4J_VECTOR_INDEX": "entity_embeddings",
+        "NEO4J_VECTOR_DIMENSIONS": "1536",
+        "NEO4J_SIMILARITY_FUNCTION": "cosine",
+        "DEBUG": "true"
+      }
+    },
+    "llamacloud": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "llamacloud-mcp@latest",
+        "--api-key-env", "LLAMA_CLOUD_API_KEY",
+        "--index", "main-docs:Main documentation index for the monorepo",
+        "--transport", "stdio"
+      ],
+      "env": {
+        "LLAMA_CLOUD_API_KEY": "${LLAMA_CLOUD_API_KEY}"
+      }
+    }
+  }
+}
